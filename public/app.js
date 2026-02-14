@@ -59,7 +59,7 @@ async function init() {
         renderApp();
         changeTab('collections');
     } catch (err) {
-        tg.showAlert('Auth failed\\n' + err.message);
+        tg.showAlert('Auth failed\n' + err.message);
     }
 }
 
@@ -79,26 +79,18 @@ function renderApp() {
     app.mount('#root');
     // Render HTML with v-bind etc, but for simplicity, keep similar
     document.getElementById('root').innerHTML = `
-        <h1>ChaosMeme Hub</h1>
-        ${userId ? `<p style="text-align:center; color:#aaa;">ID: ${userId}</p>` : ''}
-
-        <div class="tabs">
-            <div class="tab ${currentTab==='collections'?'active':''}" onclick="changeTab('collections')">Коллекции</div>
-            <div class="tab ${currentTab==='inventory'?'active':''}" onclick="changeTab('inventory')">Инвентарь</div>
-            <div class="tab ${currentTab==='market'?'active':''}" onclick="changeTab('market')">Рынок</div>
-            <div class="tab ${currentTab==='leaderboard'?'active':''}" onclick="changeTab('leaderboard')">Лидеры</div>
-        </div>
-
-        <button class="btn" onclick="claimDaily()">Получить ежедневную награду</button>
-
+        <nav class="tabs">
+            <button @click="changeTab('collections')">Collections</button>
+            <button @click="changeTab('inventory')">Inventory</button>
+            <button @click="changeTab('market')">Market</button>
+            <button @click="changeTab('leaderboard')">Leaderboard</button>
+            <button @click="claimDaily">Claim Daily</button>
+        </nav>
         <div id="content"></div>
     `;
-    loadContent();
 }
 
 async function loadContent(offset = 0, limit = 20) {
-    const cont = document.getElementById('content');
-    cont.innerHTML = '<div class="loader">Загрузка...</div>';
     try {
         let data;
         if (currentTab === 'collections') {
@@ -118,7 +110,26 @@ async function loadContent(offset = 0, limit = 20) {
 }
 
 function renderCollections(collections) {
-    // ... existing, truncated for brevity
+    const cont = document.getElementById('content');
+    cont.innerHTML = '';
+    for (const [key, items] of Object.entries(collections)) {
+        const section = document.createElement('div');
+        section.className = 'collection';
+        section.innerHTML = `<h2>${key.toUpperCase()}</h2><div class="grid"></div>`;
+        const grid = section.querySelector('.grid');
+        items.forEach(item => {
+            const card = document.createElement('div');
+            card.className = `card ${item.rarity}`;
+            card.innerHTML = `
+                <img src="${item.img}" alt="${item.name}">
+                <div class="rarity">${item.rarity}</div>
+                <div class="price">${item.price} Stars</div>
+            `;
+            card.onclick = () => tg.showAlert(`Buy ${item.name} for ${item.price} Stars?`);  # Placeholder for buy logic
+            grid.appendChild(card);
+        });
+        cont.appendChild(section);
+    }
 }
 
 function renderInventory(items) {
@@ -147,7 +158,20 @@ function renderInventory(items) {
 }
 
 function renderMarket(items) {
-    // ... existing
+    const cont = document.getElementById('content');
+    cont.innerHTML = '<div class="grid"></div>';
+    const grid = cont.querySelector('.grid');
+    items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `card ${item.rarity}`;
+        card.innerHTML = `
+            <img src="${item.img}" alt="${item.name}">
+            <div class="rarity">${item.rarity}</div>
+            <div class="price">${item.price} Stars</div>
+        `;
+        card.onclick = () => buyMarketItem(item.market_id, item.price, item.name);
+        grid.appendChild(card);
+    });
 }
 
 async function buyMarketItem(marketId, price, name) {
@@ -159,7 +183,6 @@ async function buyMarketItem(marketId, price, name) {
     try {
         const res = await apiFetch(`/market/create_invoice/${marketId}`, { method: 'POST' });
         tg.openLink(res.invoice_link);
-        // Payment will be handled via webhook
         tg.showAlert('Payment interface opened');
     } catch (err) {
         tg.showAlert('Error creating invoice: ' + err.message);
@@ -167,11 +190,24 @@ async function buyMarketItem(marketId, price, name) {
 }
 
 function renderLeaderboard(data) {
-    // ... existing
+    const cont = document.getElementById('content');
+    cont.innerHTML = '<ul class="leaderboard"></ul>';
+    const list = cont.querySelector('.leaderboard');
+    data.forEach((entry, i) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>#${i+1}</span> User ${entry.user_id}: ${entry.score} points`;
+        list.appendChild(li);
+    });
 }
 
 async function claimDaily() {
-    // ... existing, with validation if needed
+    try {
+        const res = await apiFetch('/daily/claim', { method: 'POST' });
+        tg.showAlert('Claimed: ' + res.item);
+        loadContent();
+    } catch (err) {
+        tg.showAlert('Claim error: ' + err.message);
+    }
 }
 
 // Auto load
