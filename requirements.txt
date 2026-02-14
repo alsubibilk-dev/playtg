@@ -1,0 +1,16 @@
+fastapi==0.115.0
+uvicorn==0.32.0
+gunicorn==23.0.0
+aiosqlite==0.20.0  # Legacy
+pydantic==2.9.2
+pydantic-settings==2.5.2
+slowapi==0.1.9
+pyjwt==2.9.0
+python-dotenv==1.0.1
+asyncpg==0.29.0
+alembic==1.13.1
+aioredis==3.0.0
+pytest==8.0.2
+structlog==24.1.0
+psycopg2-binary==2.9.9
+requests==2.32.3  # For Telegram API
